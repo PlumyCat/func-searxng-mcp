@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+"""
+Frozen version metadata for SearXNG in non-git environments.
+This module is imported by searx.version if present, avoiding any git subprocess calls.
+"""
+
+VERSION_STRING = "1.0.0"
+VERSION_TAG = "1.0.0"
+DOCKER_TAG = "1.0.0"
+GIT_URL = "unknown"
+GIT_BRANCH = "unknown"
+
+
