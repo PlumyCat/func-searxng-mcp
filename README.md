@@ -275,6 +275,24 @@ For GitHub Copilot within VS Code, you should instead set the key as the `x-func
 }
 ```
 
+### MCP client configurations included in this repo
+
+This repository already contains ready-to-use client configurations for MCP:
+
+- VS Code: `.vscode/mcp.json`
+  - Start the MCP server from VS Code and select `remote-mcp-function`.
+  - You will be prompted for `functionapp-name` and the `x-functions-key`.
+  - Retrieve the key (system key named `mcp_extension`) with:
+    ```bash
+    az functionapp keys list -g <resource_group> -n <function_app_name>
+    ```
+  - For local testing, select `local-mcp-function` which points to `http://localhost:7071/runtime/webhooks/mcp/sse`.
+
+- Claude Desktop: `claude_desktop.mcp.example.json`
+  - Copy this file’s `mcpServers` section into your Claude Desktop MCP configuration.
+  - Replace placeholders `<functionapp-name>` and `<your-mcp-extension-system-key>`.
+  - Ensure the URL points to your Function App SSE endpoint and include the `x-functions-key` header.
+
 ## Redeploy your code
 
 You can run the `azd up` command as many times as you need to both provision your Azure resources and deploy code updates to your function app.
