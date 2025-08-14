@@ -205,6 +205,12 @@ azd env set VNET_ENABLED true
 
 Additionally, you can front this app with API Management for policies and auth, and/or use App Service built-in authentication.
 
+> Note on MCP SSE webhook support
+>
+> This project enables the MCP SSE webhook (`/runtime/webhooks/mcp/sse`) via the Experimental Extension Bundle in `host.json`.
+> - Local: `ENABLE_MCP_TRIGGERS=true` is set in `local.settings.json`.
+> - Azure: set an app setting `ENABLE_MCP_TRIGGERS=true` if you need the MCP triggers active in production. If you only need HTTP endpoints (`/api/ping`, `/api/websearch`), you can set it to `false`.
+
 ## Connect to your *remote* MCP server from a client (optional)
 
 Your client will need a key in order to invoke the new hosted SSE endpoint, which will be of the form `https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp/sse`. The hosted function requires a system key by default which can be obtained from the [portal](https://learn.microsoft.com/azure/azure-functions/function-keys-how-to?tabs=azure-portal) or the CLI (`az functionapp keys list --resource-group <resource_group> --name <function_app_name>`). Obtain the system key named `mcp_extension`.
