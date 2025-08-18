@@ -107,6 +107,8 @@ az functionapp keys list \
 Notes:
 - The `websearch` endpoint expects a `query` field. Do not send OpenAI-style payloads like `{ "prompt": ... }`.
 - `ping` is anonymous; `websearch` uses `FUNCTION` auth by default.
+- Responses from `/api/websearch` include an `unresponsive_engines` array with
+  engine names and error types for any engines that failed to respond.
 
 ## Connect to the *local* MCP server from a client/host (optional)
 
@@ -392,6 +394,8 @@ az functionapp keys list \
 Notes:
 - The `websearch` endpoint expects a `query` field. Do not send OpenAI-style payloads like `{ "prompt": ... }`.
 - `ping` is anonymous; `websearch` uses `FUNCTION` auth by default.
+- Responses from `/api/websearch` include an `unresponsive_engines` array with
+  engine names and error types for any engines that failed to respond.
 
 ## Source Code (snippets)
 

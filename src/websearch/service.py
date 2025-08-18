@@ -78,7 +78,11 @@ def perform_search(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Run a search using SearXNG core based on the given payload.
 
     Expected payload keys: query (str), engines (list[str]|str), language (str),
-    time_range (str), pageno (int), safesearch (int), max_results (int)
+    time_range (str), pageno (int), safesearch (int), max_results (int).
+
+    The returned dictionary includes an ``unresponsive_engines`` field listing
+    engines that failed to respond. Each entry contains the engine name and the
+    error type encountered.
     """
     _initialize_search_core()
 
@@ -127,6 +131,10 @@ def perform_search(payload: Dict[str, Any]) -> Dict[str, Any]:
         "paging": result_container.paging,
         "number_of_results": result_container.number_of_results,
     }
+    response["unresponsive_engines"] = [
+        {"engine": u.engine, "error": u.error_type}
+        for u in result_container.unresponsive_engines
+    ]
     return response
 
 
