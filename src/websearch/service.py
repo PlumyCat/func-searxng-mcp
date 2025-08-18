@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 # Lazy-loaded SearXNG modules to avoid import-time failures on Azure
 searx = None  # type: ignore[assignment]
@@ -22,7 +23,7 @@ def _initialize_search_core() -> None:
         return
     try:
         # Import here to avoid loading at module import time
-        import searx as _searx  # type: ignore
+        import searx as _searx  # type: ignore  # noqa: I001
         import searx.engines as _searx_engines  # noqa: F401
         import searx.preferences as _searx_preferences  # noqa: F401
         import searx.webadapter as _searx_webadapter  # noqa: F401
@@ -33,6 +34,7 @@ def _initialize_search_core() -> None:
         Engine = _Engine
     except Exception as exc:  # pragma: no cover
         raise RuntimeError(f"Failed to import SearXNG core: {exc}") from exc
+    _harden_settings(searx)
     searx.search.initialize(
         settings_engines=searx.settings["engines"],
         enable_checker=False,
@@ -42,10 +44,36 @@ def _initialize_search_core() -> None:
     _SEARCH_INITIALIZED = True
 
 
-def _build_form(payload: Dict[str, Any]) -> Dict[str, str]:
-    form: Dict[str, str] = {}
+def _harden_settings(searx_mod) -> None:
+    """Tune SearXNG at runtime sans modifier le YAML."""
+    s = searx_mod.settings
+    outgoing = s.setdefault("outgoing", {})
+    outgoing["request_timeout"] = float(os.getenv("REQUEST_TIMEOUT", "2.5"))
+    outgoing["max_request_timeout"] = float(os.getenv("MAX_REQUEST_TIMEOUT", "6"))
+    # Désactiver des engines problématiques si présents
+    to_disable = {
+        e.strip().lower()
+        for e in os.getenv(
+            "DISABLE_ENGINES",
+            "bing,bing images,bing news,bing videos,google,google images,google news",
+        ).split(",")
+    }
+    for eng in s.get("engines", []):
+        name = str(eng.get("name", "")).lower()
+        if name in to_disable:
+            eng["disabled"] = True
+
+
+def _build_form(payload: dict[str, Any]) -> dict[str, str]:
+    form: dict[str, str] = {}
     form["q"] = str(payload.get("query", "")).strip()
-    if engines := payload.get("engines"):
+    # Engines par défaut si non fournis
+    default_engines = os.getenv(
+        "DEFAULT_ENGINES",
+        "duckduckgo,qwant,wikipedia,wikidata,stackoverflow,github,hackernews",
+    )
+    engines = payload.get("engines") or default_engines
+    if engines:
         if isinstance(engines, list):
             form["engines"] = ",".join([str(e) for e in engines])
         elif isinstance(engines, str):
@@ -74,7 +102,7 @@ def _json_default(obj: Any) -> Any:
     return str(obj)
 
 
-def perform_search(payload: Dict[str, Any]) -> Dict[str, Any]:
+def perform_search(payload: dict[str, Any]) -> dict[str, Any]:
     """Run a search using SearXNG core based on the given payload.
 
     Expected payload keys: query (str), engines (list[str]|str), language (str),
@@ -101,7 +129,7 @@ def perform_search(payload: Dict[str, Any]) -> Dict[str, Any]:
     result_container = searx.search.Search(search_query).search()  # type: ignore[attr-defined]
 
     results = result_container.get_ordered_results()
-    max_results: Optional[int] = None
+    max_results: int | None = None
     try:
         if payload.get("max_results") is not None:
             max_results = int(payload["max_results"])  # type: ignore[index]
@@ -110,7 +138,7 @@ def perform_search(payload: Dict[str, Any]) -> Dict[str, Any]:
     if isinstance(max_results, int) and max_results > 0:
         results = results[:max_results]
 
-    results_json: List[Dict[str, Any]] = []
+    results_json: list[dict[str, Any]] = []
     for r in results:
         rd = r.as_dict()
         rd.pop("parsed_url", None)
@@ -138,5 +166,5 @@ def perform_search(payload: Dict[str, Any]) -> Dict[str, Any]:
     return response
 
 
-def dumps_response(response: Dict[str, Any]) -> str:
+def dumps_response(response: dict[str, Any]) -> str:
     return json.dumps(response, ensure_ascii=False, default=_json_default)
