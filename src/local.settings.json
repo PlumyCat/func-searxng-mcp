@@ -3,11 +3,15 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "python",
+
     "ENABLE_MCP_TRIGGERS": "true",
-    "DEFAULT_ENGINES": "qwant,wikipedia",
-    "DISABLE_ENGINES": "bing,bing images,bing news,bing videos,google,google images,google news, github",
-    "REQUEST_TIMEOUT": "2.0",
-    "MAX_REQUEST_TIMEOUT": "5.0",
+
+    "DEFAULT_ENGINES": "duckduckgo,qwant,google,wikipedia,wikidata,github,stackoverflow,hackernews",
+    "DISABLE_ENGINES": "bing,bing images,bing news,bing videos",
+
+    "REQUEST_TIMEOUT": "8.0",
+    "MAX_REQUEST_TIMEOUT": "15.0",
+
     "SEARX_OUTGOING_TIMEOUT": "12",
     "SEARX_FORCE_IPV4": "true",
     "SEARX_HTTP_MAX_CONNECTIONS": "100",
