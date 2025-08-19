@@ -7,6 +7,11 @@
     "DEFAULT_ENGINES": "qwant,wikipedia",
     "DISABLE_ENGINES": "bing,bing images,bing news,bing videos,google,google images,google news, github",
     "REQUEST_TIMEOUT": "2.0",
-    "MAX_REQUEST_TIMEOUT": "5.0"
+    "MAX_REQUEST_TIMEOUT": "5.0",
+    "SEARX_OUTGOING_TIMEOUT": "12",
+    "SEARX_FORCE_IPV4": "true",
+    "SEARX_HTTP_MAX_CONNECTIONS": "100",
+    "SEARX_HTTP_MAX_KEEPALIVE": "50",
+    "SEARX_REQUEST_JITTER_MS": "0"
   }
 }
