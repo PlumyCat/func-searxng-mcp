@@ -1,8 +1,12 @@
 {
   "IsEncrypted": false,
   "Values": {
-    "FUNCTIONS_WORKER_RUNTIME": "python",
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "ENABLE_MCP_TRIGGERS": "true"
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "ENABLE_MCP_TRIGGERS": "true",
+    "DEFAULT_ENGINES": "qwant,wikipedia",
+    "DISABLE_ENGINES": "bing,bing images,bing news,bing videos,google,google images,google news, github",
+    "REQUEST_TIMEOUT": "2.0",
+    "MAX_REQUEST_TIMEOUT": "5.0"
   }
 }
