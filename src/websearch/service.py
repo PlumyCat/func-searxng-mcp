@@ -32,7 +32,24 @@ def _initialize_search_core() -> None:
         from searx.enginelib import Engine as _Engine  # type: ignore
         searx = _searx
         Engine = _Engine
+        
+        # Test import of commonly failing dependencies
+        try:
+            import dateutil
+            print(f"DEBUG: dateutil imported successfully from {dateutil.__file__}")
+        except ImportError as e:
+            print(f"DEBUG: dateutil import failed: {e}")
+            
+        try:
+            import babel
+            print(f"DEBUG: babel imported successfully from {babel.__file__}")
+        except ImportError as e:
+            print(f"DEBUG: babel import failed: {e}")
+            
     except Exception as exc:  # pragma: no cover
+        print(f"DEBUG: SearXNG core import failed: {exc}")
+        import sys
+        print(f"DEBUG: sys.path = {sys.path}")
         raise RuntimeError(f"Failed to import SearXNG core: {exc}") from exc
     _harden_settings(searx)
     searx.search.initialize(
@@ -44,33 +61,61 @@ def _initialize_search_core() -> None:
     _SEARCH_INITIALIZED = True
 
 
+def _test_engine_imports() -> set[str]:
+    """Test which engines can be imported successfully."""
+    working_engines = set()
+    
+    # Test some basic engines that usually work
+    basic_engines = ["google", "bing", "startpage", "brave", "mojeek"]
+    
+    for engine_name in basic_engines:
+        try:
+            # Try to import the engine module
+            import importlib
+            module = importlib.import_module(f"searx.engines.{engine_name}")
+            working_engines.add(engine_name)
+            print(f"DEBUG: Engine {engine_name} imported successfully")
+        except Exception as e:
+            print(f"DEBUG: Engine {engine_name} failed to import: {e}")
+    
+    return working_engines
+
 def _harden_settings(searx_mod) -> None:
     """Tune SearXNG at runtime sans modifier le YAML."""
     s = searx_mod.settings
     outgoing = s.setdefault("outgoing", {})
     outgoing["request_timeout"] = float(os.getenv("REQUEST_TIMEOUT", "2.5"))
     outgoing["max_request_timeout"] = float(os.getenv("MAX_REQUEST_TIMEOUT", "6"))
+    
+    # Test which engines work and disable the rest
+    working_engines = _test_engine_imports()
+    
     # Désactiver des engines problématiques si présents
     to_disable = {
         e.strip().lower()
         for e in os.getenv(
             "DISABLE_ENGINES",
-            "bing,bing images,bing news,bing videos,google,google images,google news",
+            "wikipedia,wikidata,github,stackoverflow,hackernews,duckduckgo,qwant",
         ).split(",")
     }
+    
     for eng in s.get("engines", []):
         name = str(eng.get("name", "")).lower()
-        if name in to_disable:
+        # Disable if explicitly in disable list OR if it failed import test
+        if name in to_disable or (name not in working_engines and name not in ["google", "bing", "startpage", "brave", "mojeek"]):
             eng["disabled"] = True
+            print(f"DEBUG: Disabled engine {name}")
+        else:
+            print(f"DEBUG: Keeping engine {name} enabled")
 
 
 def _build_form(payload: dict[str, Any]) -> dict[str, str]:
     form: dict[str, str] = {}
     form["q"] = str(payload.get("query", "")).strip()
-    # Engines par défaut si non fournis
+    # Engines par défaut si non fournis - utiliser seulement les engines simples qui fonctionnent
     default_engines = os.getenv(
         "DEFAULT_ENGINES",
-        "duckduckgo,qwant,wikipedia,wikidata,stackoverflow,github,hackernews",
+        "google,bing,startpage,brave",
     )
     engines = payload.get("engines") or default_engines
     if engines:
@@ -112,6 +157,18 @@ def perform_search(payload: dict[str, Any]) -> dict[str, Any]:
     engines that failed to respond. Each entry contains the engine name and the
     error type encountered.
     """
+    # Try SearXNG first, but fallback to simple search if it fails
+    try:
+        return _perform_searxng_search(payload)
+    except Exception as e:
+        print(f"SearXNG search failed, using fallback: {e}")
+        # Import here to avoid circular imports
+        from .simple_search import perform_simple_search
+        return perform_simple_search(payload)
+
+
+def _perform_searxng_search(payload: dict[str, Any]) -> dict[str, Any]:
+    """Original SearXNG search implementation."""
     _initialize_search_core()
 
     form = _build_form(payload)
@@ -163,6 +220,11 @@ def perform_search(payload: dict[str, Any]) -> dict[str, Any]:
         {"engine": u.engine, "error": u.error_type}
         for u in result_container.unresponsive_engines
     ]
+    
+    # If no results and all engines failed, raise exception to trigger fallback
+    if not results_json and response["unresponsive_engines"]:
+        raise RuntimeError("All SearXNG engines failed")
+    
     return response
 
 

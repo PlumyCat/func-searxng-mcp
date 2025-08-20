@@ -23,6 +23,7 @@ def _ensure_dependencies_on_sys_path() -> None:
     # Fallback: try common virtualenv site-packages
     venv_lib_glob = os.path.join(app_root, ".venv", "lib", "python*", "site-packages")
     candidates.extend(glob.glob(venv_lib_glob))
+    
     for candidate in candidates:
         if os.path.isdir(candidate) and candidate not in sys.path:
             sys.path.insert(0, candidate)
